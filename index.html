@@ -433,28 +433,20 @@
 
     function pickDisplayTitle(result, query) {
       const normalizedQuery = normalizeText(query);
-      const titleCandidates = [
-        { text: result.title_japanese, type: 'jp' },
-        { text: result.title, type: 'default' },
-        { text: result.title_english, type: 'en' }
-      ].filter((item) => item.text);
-
-      for (const candidate of titleCandidates) {
-        if (normalizeText(candidate.text) === normalizedQuery) {
-          return candidate.text;
-        }
+      const candidates = [result.title_japanese, result.title, result.title_english].filter(Boolean);
+      const exactMatch = candidates.find((title) => normalizeText(title) === normalizedQuery);
+      if (exactMatch) {
+        return exactMatch;
       }
-
-      if (/[ -]/.test(query) && result.title_english) {
-        return result.title_english;
-      }
-      if (/[\u4e00-\u9fff\u3040-\u30ff]/.test(query) && result.title_japanese) {
+      if (/^[一-鿿぀-ヿ\s]+$/.test(query) && result.title_japanese) {
         return result.title_japanese;
+      }
+      if (/^[A-Za-z0-9\s]+$/.test(query) && result.title_english) {
+        return result.title_english;
       }
       return result.title || result.title_english || result.title_japanese || '';
     }
-
-    function updateAnimeCard(data) {
+function updateAnimeCard(data) {
       currentAnimeData = data;
       animePoster.src = data.image_url || 'https://via.placeholder.com/360x480?text=No+Image';
       animeTitle.textContent = data.title || '未知標題';
