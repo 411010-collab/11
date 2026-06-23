@@ -310,6 +310,7 @@
               <div class="badge" id="animeYear">年份：-</div>
               <div class="badge" id="animeEpisodes">集數：-</div>
             </div>
+            <p class="text-muted" id="animeAltTitles">其他名稱：-</p>
             <p class="text-muted" id="animeSynopsis">請在上方搜尋框輸入名稱，按下搜尋後即可取得動畫資料。</p>
           </div>
         </section>
@@ -389,6 +390,70 @@
       currentTime.textContent = new Date().toLocaleString();
     }
 
+    function normalizeText(text) {
+      return (text || '')
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/[\s\-_/\u3000]+/g, ' ')
+        .replace(/[()\[\]{}«»“”‘’'"。？！，、…·]/g, '');
+    }
+
+    function getBestAnimeResult(results, query) {
+      const normalizedQuery = normalizeText(query);
+      let best = null;
+      let bestScore = -1;
+
+      results.forEach((item, index) => {
+        const titles = [
+          item.title,
+          item.title_english,
+          item.title_japanese,
+          ...(item.titles || []).map((t) => t.title)
+        ]
+          .filter(Boolean)
+          .map(normalizeText);
+
+        const score = titles.reduce((max, title) => {
+          if (title === normalizedQuery) return Math.max(max, 100);
+          if (title.includes(normalizedQuery) || normalizedQuery.includes(title)) return Math.max(max, 90);
+          if (title.split(' ').some((part) => normalizedQuery.includes(part) || part.includes(normalizedQuery))) return Math.max(max, 80);
+          return max;
+        }, 0);
+
+        const finalScore = score > 0 ? score : 50 - index;
+        if (finalScore > bestScore) {
+          bestScore = finalScore;
+          best = item;
+        }
+      });
+
+      return best;
+    }
+
+    function pickDisplayTitle(result, query) {
+      const normalizedQuery = normalizeText(query);
+      const titleCandidates = [
+        { text: result.title_japanese, type: 'jp' },
+        { text: result.title, type: 'default' },
+        { text: result.title_english, type: 'en' }
+      ].filter((item) => item.text);
+
+      for (const candidate of titleCandidates) {
+        if (normalizeText(candidate.text) === normalizedQuery) {
+          return candidate.text;
+        }
+      }
+
+      if (/[ -]/.test(query) && result.title_english) {
+        return result.title_english;
+      }
+      if (/[\u4e00-\u9fff\u3040-\u30ff]/.test(query) && result.title_japanese) {
+        return result.title_japanese;
+      }
+      return result.title || result.title_english || result.title_japanese || '';
+    }
+
     function updateAnimeCard(data) {
       currentAnimeData = data;
       animePoster.src = data.image_url || 'https://via.placeholder.com/360x480?text=No+Image';
@@ -396,6 +461,7 @@
       animeYear.textContent = `年份：${data.year || '未知'}`;
       animeEpisodes.textContent = `集數：${data.episodes || '未知'}`;
       animeSynopsis.textContent = data.synopsis || '該動畫尚無簡介。';
+      document.getElementById('animeAltTitles').textContent = `其他名稱：${data.altTitles || '-'}`;
       recordTitle.textContent = data.title || '無';
       recordYear.textContent = data.year || '-';
       recordEpisodes.textContent = data.episodes || '-';
@@ -416,7 +482,7 @@
       animePoster.src = 'https://via.placeholder.com/360x480?text=Loading...';
 
       const encoded = encodeURIComponent(query);
-      const url = `https://api.jikan.moe/v4/anime?q=${encoded}&limit=1`;
+      const url = `https://api.jikan.moe/v4/anime?q=${encoded}&limit=5`;
 
       try {
         const response = await fetch(url);
@@ -425,7 +491,8 @@
         }
 
         const payload = await response.json();
-        const result = payload.data && payload.data[0];
+        const results = payload.data || [];
+        const result = getBestAnimeResult(results, query);
 
         if (!result) {
           setStatus('找不到該動漫，請試試其他關鍵字。');
@@ -439,14 +506,25 @@
           return;
         }
 
+        const titles = result.titles || [];
+        const altTitles = titles
+          .filter((item) => item.type !== 'Default')
+          .map((item) => item.title)
+          .slice(0, 4)
+          .join(' / ');
+
+        const displayTitle = pickDisplayTitle(result, query);
+        const synopsis = result.synopsis || '該動畫尚無簡介。';
+
         const animeData = {
-          title: result.title || '',
+          title: displayTitle,
           year: result.year || '未知',
           episodes: result.episodes || '未知',
-          synopsis: result.synopsis || '無簡介',
+          synopsis,
           image_url: result.images?.jpg?.image_url || result.trailer?.images?.large_image_url || '',
           url: result.url || '',
-          mal_id: result.mal_id || ''
+          mal_id: result.mal_id || '',
+          altTitles: altTitles || '-' 
         };
 
         updateAnimeCard(animeData);
