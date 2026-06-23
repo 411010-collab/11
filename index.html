@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>動漫觀影紀錄庫 | Anime Logger</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0f16;
+      --surface: #121821;
+      --surface-strong: #1c2430;
+      --text: #e9edf5;
+      --muted: #9bacbd;
+      --accent: #6c9cff;
+      --accent-soft: rgba(108, 156, 255, 0.18);
+      --success: #55d18d;
+      --danger: #ff7b72;
+      --radius: 20px;
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: radial-gradient(circle at top, rgba(108, 156, 255, 0.18), transparent 22%),
+                  linear-gradient(180deg, #0b0f16 0%, #111821 45%, #0d1117 100%);
+      color: var(--text);
+    }
+
+    .page {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 3.2vw, 3rem);
+      letter-spacing: 0.04em;
+    }
+
+    .hero-text {
+      color: var(--muted);
+      max-width: 720px;
+      line-height: 1.65;
+    }
+
+    .panel {
+      background: rgba(18, 24, 32, 0.9);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px;
+      backdrop-filter: blur(10px);
+    }
+
+    .search-row {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    input[type='search'], select, textarea {
+      width: 100%;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: #101623;
+      color: var(--text);
+      padding: 16px 18px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    input[type='search']:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: rgba(108, 156, 255, 0.8);
+      transform: translateY(-1px);
+    }
+
+    button {
+      border: none;
+      border-radius: 14px;
+      padding: 16px 24px;
+      font-size: 1rem;
+      cursor: pointer;
+      color: #fff;
+      background: linear-gradient(135deg, #6c9cff, #8f7bff);
+      box-shadow: 0 18px 30px rgba(108, 156, 255, 0.16);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 24px 40px rgba(108, 156, 255, 0.24);
+    }
+
+    .card-grid {
+      display: grid;
+      gap: 22px;
+      grid-template-columns: 1.15fr 0.85fr;
+      margin-top: 18px;
+    }
+
+    .anime-card,
+    .form-card {
+      background: rgba(14, 19, 27, 0.95);
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,0.05);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .anime-card img {
+      width: 100%;
+      display: block;
+      aspect-ratio: 3 / 4;
+      object-fit: cover;
+      filter: saturate(1.05);
+    }
+
+    .anime-card .details {
+      padding: 22px;
+    }
+
+    .anime-card h2 {
+      margin: 0;
+      font-size: 1.6rem;
+    }
+
+    .anime-card .info {
+      margin: 18px 0 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    .anime-card .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(108, 156, 255, 0.12);
+      padding: 10px 14px;
+      border-radius: 999px;
+      color: #c8d4f2;
+      font-size: 0.94rem;
+    }
+
+    .anime-card .text-muted {
+      color: var(--muted);
+      margin-top: 14px;
+      line-height: 1.8;
+    }
+
+    .form-card .form-body {
+      padding: 24px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .label-group {
+      display: grid;
+      gap: 10px;
+    }
+
+    .label-group label {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    .status-bar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: center;
+      margin-top: 6px;
+      color: #c9d2e7;
+      font-size: 0.95rem;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 999px;
+      padding: 10px 14px;
+      color: #d7e1f6;
+      font-size: 0.9rem;
+    }
+
+    .status-pill span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+    }
+
+    .loader {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--accent);
+    }
+
+    .loader:before {
+      content: '';
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 3px solid rgba(108, 156, 255, 0.24);
+      border-top-color: #6c9cff;
+      animation: spin 0.85s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .footer {
+      margin-top: 28px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .shadow-box {
+      background: rgba(255,255,255,0.03);
+      padding: 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .empty-state {
+      border-radius: 20px;
+      border: 1px dashed rgba(255,255,255,0.14);
+      padding: 28px;
+      background: rgba(255,255,255,0.02);
+      color: var(--muted);
+      text-align: center;
+      min-height: 260px;
+      display: grid;
+      place-content: center;
+    }
+
+    @media (max-width: 900px) {
+      .card-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .search-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div>
+        <h1>動漫觀影紀錄庫</h1>
+        <p class="hero-text">搜尋你想看的動畫，快速抓取 Jikan API 內容，並記錄評分與無雷短評到 Google 試算表。</p>
+      </div>
+      <div class="status-pill">
+        <span></span>
+        靜態 GitHub Pages + Google Apps Script
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="search-row">
+        <input id="searchInput" type="search" placeholder="輸入動漫名稱，例如：進擊的巨人" />
+        <button id="searchButton" type="button">立即搜尋</button>
+      </div>
+
+      <div class="status-bar">
+        <div id="messageText">請先搜尋動漫名稱，系統會自動填入海報與基本資訊。</div>
+        <div id="currentTime" class="status-pill">系統準備就緒</div>
+      </div>
+
+      <div class="card-grid">
+        <section class="anime-card" id="animeCard">
+          <img id="animePoster" src="https://via.placeholder.com/360x480?text=Anime+Poster" alt="動漫海報" />
+          <div class="details">
+            <h2 id="animeTitle">等待搜尋...</h2>
+            <div class="info">
+              <div class="badge" id="animeYear">年份：-</div>
+              <div class="badge" id="animeEpisodes">集數：-</div>
+            </div>
+            <p class="text-muted" id="animeSynopsis">請在上方搜尋框輸入名稱，按下搜尋後即可取得動畫資料。</p>
+          </div>
+        </section>
+
+        <section class="form-card">
+          <div class="form-body">
+            <div class="label-group">
+              <label for="ratingSelect">我的評分
+                <span id="ratingHint">必填</span>
+              </label>
+              <select id="ratingSelect">
+                <option value="">請選擇評分</option>
+                <option value="10">10分 - 必看</option>
+                <option value="9">9分</option>
+                <option value="8">8分</option>
+                <option value="7">7分</option>
+                <option value="6">6分</option>
+                <option value="5">5分</option>
+                <option value="4">4分</option>
+                <option value="3">3分</option>
+                <option value="2">2分</option>
+                <option value="1">1分</option>
+              </select>
+            </div>
+
+            <div class="label-group">
+              <label for="commentInput">無雷短評
+                <span id="commentHint">可填可不填</span>
+              </label>
+              <textarea id="commentInput" rows="5" placeholder="寫下你對這部動漫的感想，例如：角色很有魅力、劇情節奏佳、片尾曲很洗腦。"></textarea>
+            </div>
+
+            <div class="label-group">
+              <label>已選動畫資料</label>
+              <div class="shadow-box">
+                <p>標題：<strong id="recordTitle">無</strong></p>
+                <p>年份：<strong id="recordYear">-</strong></p>
+                <p>集數：<strong id="recordEpisodes">-</strong></p>
+              </div>
+            </div>
+
+            <button id="submitButton" type="button">送出紀錄</button>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>注意：請先完成搜尋，才可送出正確動漫資訊。</span>
+      <span>GAS URL 請填入程式碼中的 <code>GAS_URL</code> 常數。</span>
+    </footer>
+  </main>
+
+  <script>
+    const GAS_URL = '';
+
+    const searchInput = document.getElementById('searchInput');
+    const searchButton = document.getElementById('searchButton');
+    const messageText = document.getElementById('messageText');
+    const currentTime = document.getElementById('currentTime');
+    const animePoster = document.getElementById('animePoster');
+    const animeTitle = document.getElementById('animeTitle');
+    const animeYear = document.getElementById('animeYear');
+    const animeEpisodes = document.getElementById('animeEpisodes');
+    const animeSynopsis = document.getElementById('animeSynopsis');
+    const ratingSelect = document.getElementById('ratingSelect');
+    const commentInput = document.getElementById('commentInput');
+    const submitButton = document.getElementById('submitButton');
+    const recordTitle = document.getElementById('recordTitle');
+    const recordYear = document.getElementById('recordYear');
+    const recordEpisodes = document.getElementById('recordEpisodes');
+
+    let currentAnimeData = null;
+
+    function setStatus(message, loading = false) {
+      messageText.innerHTML = loading ? `<span class="loader">${message}</span>` : message;
+      currentTime.textContent = new Date().toLocaleString();
+    }
+
+    function updateAnimeCard(data) {
+      currentAnimeData = data;
+      animePoster.src = data.image_url || 'https://via.placeholder.com/360x480?text=No+Image';
+      animeTitle.textContent = data.title || '未知標題';
+      animeYear.textContent = `年份：${data.year || '未知'}`;
+      animeEpisodes.textContent = `集數：${data.episodes || '未知'}`;
+      animeSynopsis.textContent = data.synopsis || '該動畫尚無簡介。';
+      recordTitle.textContent = data.title || '無';
+      recordYear.textContent = data.year || '-';
+      recordEpisodes.textContent = data.episodes || '-';
+    }
+
+    async function searchAnime() {
+      const query = searchInput.value.trim();
+      if (!query) {
+        setStatus('請輸入動漫名稱後再搜尋。');
+        return;
+      }
+
+      setStatus('搜尋中，正從 Jikan API 取得資料...', true);
+      animeTitle.textContent = '查詢中...';
+      animeYear.textContent = '年份：-';
+      animeEpisodes.textContent = '集數：-';
+      animeSynopsis.textContent = '請稍候。';
+      animePoster.src = 'https://via.placeholder.com/360x480?text=Loading...';
+
+      const encoded = encodeURIComponent(query);
+      const url = `https://api.jikan.moe/v4/anime?q=${encoded}&limit=1`;
+
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`API 回傳 ${response.status}`);
+        }
+
+        const payload = await response.json();
+        const result = payload.data && payload.data[0];
+
+        if (!result) {
+          setStatus('找不到該動漫，請試試其他關鍵字。');
+          animeTitle.textContent = '查無資料';
+          animeSynopsis.textContent = '請確認名稱是否正確。';
+          animePoster.src = 'https://via.placeholder.com/360x480?text=Not+Found';
+          currentAnimeData = null;
+          recordTitle.textContent = '無';
+          recordYear.textContent = '-';
+          recordEpisodes.textContent = '-';
+          return;
+        }
+
+        const animeData = {
+          title: result.title || '',
+          year: result.year || '未知',
+          episodes: result.episodes || '未知',
+          synopsis: result.synopsis || '無簡介',
+          image_url: result.images?.jpg?.image_url || result.trailer?.images?.large_image_url || '',
+          url: result.url || '',
+          mal_id: result.mal_id || ''
+        };
+
+        updateAnimeCard(animeData);
+        setStatus('已取得動畫資料，請填寫評分與短評後送出。');
+      } catch (error) {
+        console.error(error);
+        setStatus('取得動畫資料失敗，請稍後重試。');
+        animeTitle.textContent = '取得失敗';
+        animeSynopsis.textContent = error.message || '發生未知錯誤。';
+        animePoster.src = 'https://via.placeholder.com/360x480?text=Error';
+        currentAnimeData = null;
+        recordTitle.textContent = '無';
+        recordYear.textContent = '-';
+        recordEpisodes.textContent = '-';
+      }
+    }
+
+    async function submitRecord() {
+      if (!currentAnimeData) {
+        setStatus('請先搜尋並取得動漫資料，才能送出紀錄。');
+        return;
+      }
+      if (!GAS_URL) {
+        setStatus('請先填入 GAS_URL，才能送出資料。');
+        return;
+      }
+      const rating = ratingSelect.value;
+      const comment = commentInput.value.trim();
+      if (!rating) {
+        setStatus('請選擇評分後再送出。');
+        return;
+      }
+
+      const payload = {
+        timestamp: new Date().toISOString(),
+        anime: currentAnimeData,
+        rating: rating,
+        comment: comment,
+      };
+
+      setStatus('送出中，請稍候...', true);
+      try {
+        const response = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          throw new Error(`GAS 伺服器回應 ${response.status}`);
+        }
+
+        const resultText = await response.text();
+        setStatus('紀錄送出成功！已寫入 Google 試算表。');
+        commentInput.value = '';
+        ratingSelect.value = '';
+      } catch (error) {
+        console.error(error);
+        setStatus('送出失敗，請確認 GAS 網址是否正確，或稍後重試。');
+      }
+    }
+
+    searchButton.addEventListener('click', searchAnime);
+    searchInput.addEventListener('keypress', (event) => {
+      if (event.key === 'Enter') {
+        searchAnime();
+      }
+    });
+    submitButton.addEventListener('click', submitRecord);
+
+    setStatus('歡迎使用 Anime Logger，請開始搜尋。');
+  </script>
+</body>
+</html>
