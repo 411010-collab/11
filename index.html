@@ -433,12 +433,28 @@
 
     function pickDisplayTitle(result, query) {
       const normalizedQuery = normalizeText(query);
+      const isChinese = /[\u4e00-\u9fff]/.test(query);
+      
+      if (isChinese) {
+        const chineseTitles = (result.titles || []).filter(
+          (item) => /[\u4e00-\u9fff]/.test(item.title)
+        );
+        if (chineseTitles.length > 0) {
+          return chineseTitles[0].title;
+        }
+      }
+      
       const candidates = [result.title_japanese, result.title, result.title_english].filter(Boolean);
       const exactMatch = candidates.find((title) => normalizeText(title) === normalizedQuery);
       if (exactMatch) {
         return exactMatch;
       }
-      if (/^[一-鿿぀-ヿ\s]+$/.test(query) && result.title_japanese) {
+      
+      if (isChinese) {
+        return result.title || result.title_english || result.title_japanese || '';
+      }
+      
+      if (/^[\u3040-\u30ff]+$/.test(query) && result.title_japanese) {
         return result.title_japanese;
       }
       if (/^[A-Za-z0-9\s]+$/.test(query) && result.title_english) {
